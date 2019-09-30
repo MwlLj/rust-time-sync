@@ -18,6 +18,21 @@ const UDP_LOCAL: &'static str = "0.0.0.0:35000";
 ///
 /// * `host` - The NTP server (i.e. sundial.columbia.edu).
 pub fn retrieve_ntp_timestamp<'a>(host: &'a str, port: u16, selfAddr: &str) -> Result<Timespec, &'a str> {
+    let socket = match UdpSocket::bind(selfAddr) {
+        Ok(s) => s,
+        Err(err) => {
+            return Err("socket bind error");
+        }
+    };
+    socket.set_read_timeout(Some(std::time::Duration::from_secs(30)));
+    let host = format!("{host}:{port}", host = host, port = port);
+    match socket.connect(&host[..]) {
+        Ok(()) => {},
+        Err(err) => {
+            return Err("connect error");
+        }
+    }
+
     let header = NTPHeader::new();
     let message = match header.encode() {
         Ok(m) => m,
@@ -26,16 +41,7 @@ pub fn retrieve_ntp_timestamp<'a>(host: &'a str, port: u16, selfAddr: &str) -> R
         }
     };
 
-    let socket = match UdpSocket::bind(selfAddr) {
-        Ok(s) => s,
-        Err(err) => {
-            return Err("socket bind error");
-        }
-    };
-    socket.set_read_timeout(Some(std::time::Duration::from_secs(30)));
-
-    let host = format!("{host}:{port}", host = host, port = port);
-    match socket.send_to(&message[..], &host[..]) {
+    match socket.send(&message[..]) {
         Ok(_) => {
         },
         Err(err) => {

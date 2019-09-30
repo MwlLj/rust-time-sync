@@ -48,22 +48,20 @@ fn main() {
 
     let mut interval: u64 = syncTime;
     loop {
-        let timestamp :Timespec = match retrieve_ntp_timestamp(&*serverIp, serverPort, &localAddr) {
+        match retrieve_ntp_timestamp(&*serverIp, serverPort, &localAddr) {
             Ok(t) => {
                 interval = syncTime;
                 println!("{:?}", &t);
-                t
+                let t = at(t);
+                let ts = t.to_timespec();
+                settime::set_system_time(ts.sec as i64, (ts.nsec * 1000) as i64);
             },
             Err(err) => {
                 interval = 10;
                 println!("[Warning] get time error, err: {}", err);
-                continue;
             }
         };
-        let t = at(timestamp);
-        let ts = t.to_timespec();
-        settime::set_system_time(ts.sec as i64, (ts.nsec * 1000) as i64);
-        println!("sleep time: {}", syncTime);
-        thread::sleep(Duration::from_secs(syncTime));
+        println!("sleep time: {}", interval);
+        thread::sleep(Duration::from_secs(interval));
     }
 }

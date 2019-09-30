@@ -22,7 +22,7 @@ impl NTPTimestamp {
     pub fn as_timespec(&self) -> Timespec {
         Timespec {
             sec: (self.seconds as i64) - NTP_TO_UNIX_EPOCH,
-            nsec: (((self.fraction as f64) / 2f64.powi(32)) / 1e-6) as i32,
+            nsec: (((self.fraction as f64) / 2f64.powi(32)) / 1e-3) as i32,
         }
     }
 }
